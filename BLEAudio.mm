@@ -93,21 +93,6 @@ extern "C" void onAudioDataReceived(const uint8_t* data, size_t len) {
     [peripheral discoverServices:nil];
 }
 
-/*- (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error {
-    if (error) {
-        NSLog(@"[BLE] ❌ Discover Services Error: %@", error.localizedDescription);
-        return;
-    }
-
-    for (CBService *service in peripheral.services) {
-        NSLog(@"[BLE] 🧩 Found Service %@", service.UUID.UUIDString);
-        if ([service.UUID.UUIDString containsString:@"FF04"]) {
-                NSLog(@"[BLE] 🧩 Found FF04 Service");
-                [peripheral discoverCharacteristics:nil forService:service];
-        }
-    }
-}*/
-
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error {
     if (error) {
         NSLog(@"[BLE] ❌ Discover Services Error: %@", error.localizedDescription);
@@ -120,27 +105,6 @@ extern "C" void onAudioDataReceived(const uint8_t* data, size_t len) {
     }
 }
 
-
-
-/*- (void)peripheral:(CBPeripheral *)peripheral
-didDiscoverCharacteristicsForService:(CBService *)service
-             error:(NSError *)error {
-
-    if (error) {
-        NSLog(@"[BLE] ❌ Discover Characteristics Error: %@", error.localizedDescription);
-        return;
-    }
-
-    for (CBCharacteristic *ch in service.characteristics) {
-        NSString *uuid = ch.UUID.UUIDString;
-        NSLog(@"[BLE] Characteristic: %@", uuid);
-
-        if (ch.properties & CBCharacteristicPropertyNotify) {
-                [peripheral setNotifyValue:YES forCharacteristic:ch];
-                NSLog(@"[BLE] Subscribed to notify characteristic: %@", uuid);
-        }
-    }
-}*/
 - (void)startListeningForAudioTrigger:(CBPeripheral *)peripheral withCharacteristic:(CBCharacteristic *)ch {
     if ([ch.UUID.UUIDString isEqualToString:@"FF01"]) {
         if (ch.properties & CBCharacteristicPropertyNotify || ch.properties & CBCharacteristicPropertyIndicate) {
@@ -156,20 +120,6 @@ didDiscoverCharacteristicsForService:(CBService *)service
             [peripheral setNotifyValue:YES forCharacteristic:ch];
             NSLog(@"[BLE] ✅ Subscribed to FF05 for audio data");
         }
-    }
-}
-
-- (void)tryStartAudio:(CBPeripheral *)peripheral withCharacteristic:(CBCharacteristic *)ch {
-    if ([ch.UUID.UUIDString isEqualToString:@"FF02"]) {
-        uint8_t startCommand[] = {
-            0x03, // cmd = HCI_CMD_VOICE_CONTROL
-            0x01, // len = 1
-            0x01  // payload = 1
-        };
-        NSData *commandData = [NSData dataWithBytes:startCommand length:sizeof(startCommand)];
-        [peripheral writeValue:commandData forCharacteristic:ch type:CBCharacteristicWriteWithResponse];
-        NSLog(@"[BLE] 🚀 Sent structured start command to FF02");
-        self.hasSentStartCommand = YES;
     }
 }
 
@@ -244,7 +194,7 @@ didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic
             if (ff02Char) {
                 // 延迟 100ms 后写入 FF02
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                    uint8_t startCommand[] = { 0x02, 0x01, 0x01 }; // cmd, len, payload
+                    uint8_t startCommand[] = { 0x03, 0x01, 0x01 }; // cmd, len, payload
                     NSData *commandData = [NSData dataWithBytes:startCommand length:sizeof(startCommand)];
                     [peripheral writeValue:commandData forCharacteristic:ff02Char type:CBCharacteristicWriteWithResponse];
                     NSLog(@"[BLE] 🚀 Sent start command to FF02 after 100ms delay");
